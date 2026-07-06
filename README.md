@@ -19,6 +19,12 @@ Crypto API
 
 The goal is to demonstrate a professional ETL workflow, including extraction, raw data preservation, transformation, data quality checks, logging, and visualization.
 
+## Development Approach
+
+This implementation will be developed using a mixed approach that combines AI-assisted support with manual programming. AI may be used to accelerate planning, boilerplate generation, refactoring suggestions, documentation, testing ideas, and debugging support. Manual programming will be used to review, validate, adapt, and implement the final code to ensure correctness, maintainability, and a clear understanding of the solution.
+
+The project should not rely on generated code blindly. Every important decision, transformation rule, data model, and pipeline behavior should be reviewed and adjusted manually before being considered complete.
+
 ## Main Goals
 
 This project should allow users to analyze cryptocurrency market behavior over time and answer questions such as:
@@ -629,6 +635,7 @@ Prioritize:
 - Basic test coverage.
 - Reproducibility.
 - Good documentation.
+- Manual review and validation of any AI-assisted code or documentation.
 
 Avoid:
 
