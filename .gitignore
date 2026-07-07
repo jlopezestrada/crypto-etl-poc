@@ -219,3 +219,6 @@ __marimo__/
 
 # Local git worktrees
 .worktrees/
+
+# Superpowers scratch files
+.superpowers/
