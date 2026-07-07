@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -80,6 +81,43 @@ def test_run_pipeline_logs_warning_quality_issues_for_missing_configured_coins(
         "quality_issue_warning check_name=gold_configured_coins_present "
         "message=configured coins missing from gold data: dogecoin"
     ) in warning_logs
+
+
+def test_run_pipeline_preserves_empty_sample_response_before_raising(tmp_path: Path) -> None:
+    sample_path = tmp_path / "empty-response.json"
+    sample_path.write_text(
+        json.dumps(
+            {
+                "provider": "coingecko",
+                "endpoint": "coins_markets",
+                "run_id": "empty_response",
+                "requested_at_utc": "2026-07-06T10:30:00+00:00",
+                "params": {
+                    "vs_currency": "eur",
+                    "ids": ["bitcoin"],
+                    "order": "market_cap_desc",
+                    "per_page": 250,
+                    "page": 1,
+                    "sparkline": False,
+                },
+                "response": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="extraction returned zero records"):
+        run_pipeline(
+            config_path=write_smoke_config(tmp_path, coins=["bitcoin"]),
+            use_sample_data=True,
+            sample_path=sample_path,
+        )
+
+    raw_files = list((tmp_path / "raw").rglob("response.json"))
+    assert len(raw_files) == 1
+    raw_envelope = json.loads(raw_files[0].read_text(encoding="utf-8"))
+    assert raw_envelope["response"] == []
+    assert raw_envelope["params"]["ids"] == ["bitcoin"]
 
 
 def test_run_pipeline_logs_failure_with_duration(

@@ -66,9 +66,6 @@ def run_pipeline(
         else:
             response, params = fetch_coin_markets(config.coins, config.currency, config.api)
 
-        if not response:
-            raise RuntimeError("extraction returned zero records")
-
         envelope = build_raw_envelope(
             provider="coingecko",
             endpoint="coins_markets",
@@ -79,6 +76,9 @@ def run_pipeline(
         )
         raw_path = write_raw_response(envelope, config.paths.raw_dir)
         LOGGER.info("raw_written path=%s records=%s", raw_path, len(response))
+
+        if not response:
+            raise RuntimeError("extraction returned zero records")
 
         bronze = transform_raw_to_bronze(envelope, raw_path)
         bronze_path = write_bronze_snapshot(bronze, config.paths.bronze_dir)

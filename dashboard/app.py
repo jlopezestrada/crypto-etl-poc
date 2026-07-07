@@ -6,6 +6,7 @@ import streamlit as st
 LATEST_PRICES_FILE = "gold_crypto_latest_prices.parquet"
 MARKET_OVERVIEW_FILE = "gold_market_overview.parquet"
 LATEST_PRICES_REQUIRED_COLUMNS = {"coin_id", "price_change_pct_24h"}
+LATEST_PRICES_NUMERIC_COLUMNS = ("price_change_pct_24h",)
 MARKET_OVERVIEW_REQUIRED_COLUMNS = {
     "snapshot_timestamp_utc",
     "total_market_cap",
@@ -15,6 +16,12 @@ MARKET_OVERVIEW_REQUIRED_COLUMNS = {
     "worst_performer_coin_id",
     "coin_count",
 }
+MARKET_OVERVIEW_NUMERIC_COLUMNS = (
+    "total_market_cap",
+    "total_volume_24h",
+    "average_return_24h_pct",
+    "coin_count",
+)
 
 
 class GoldDataMissingError(FileNotFoundError):
@@ -35,6 +42,25 @@ def validate_gold_frame(frame: pd.DataFrame, label: str, required_columns: set[s
         )
 
 
+def coerce_numeric_columns(
+    frame: pd.DataFrame, label: str, columns: tuple[str, ...]
+) -> pd.DataFrame:
+    coerced = frame.copy()
+    malformed_columns = []
+    for column in columns:
+        numeric_values = pd.to_numeric(coerced[column], errors="coerce")
+        if numeric_values.isna().any():
+            malformed_columns.append(column)
+        else:
+            coerced[column] = numeric_values
+    if malformed_columns:
+        raise GoldDataMalformedError(
+            f"{label} gold data has non-numeric or null values in columns: "
+            f"{', '.join(malformed_columns)}"
+        )
+    return coerced
+
+
 def load_gold_data(gold_dir: Path = Path("data/gold")) -> tuple[pd.DataFrame, pd.DataFrame]:
     latest_path = gold_dir / LATEST_PRICES_FILE
     overview_path = gold_dir / MARKET_OVERVIEW_FILE
@@ -51,6 +77,8 @@ def load_gold_data(gold_dir: Path = Path("data/gold")) -> tuple[pd.DataFrame, pd
         raise GoldDataMalformedError(f"Gold data could not be read: {exc}") from exc
     validate_gold_frame(latest, "latest prices", LATEST_PRICES_REQUIRED_COLUMNS)
     validate_gold_frame(overview, "market overview", MARKET_OVERVIEW_REQUIRED_COLUMNS)
+    latest = coerce_numeric_columns(latest, "latest prices", LATEST_PRICES_NUMERIC_COLUMNS)
+    overview = coerce_numeric_columns(overview, "market overview", MARKET_OVERVIEW_NUMERIC_COLUMNS)
     return latest, overview
 
 

@@ -107,6 +107,33 @@ def test_load_gold_data_raises_clear_error_when_required_columns_are_missing(
         load_gold_data(gold_dir)
 
 
+@pytest.mark.parametrize("column", ["total_market_cap", "coin_count"])
+def test_load_gold_data_raises_clear_error_when_overview_numeric_values_are_bad(
+    tmp_path: Path, column: str
+) -> None:
+    gold_dir = tmp_path / "gold"
+    overview = valid_overview()
+    overview[column] = overview[column].astype("object")
+    overview.loc[0, column] = "bad"
+    write_gold_data(gold_dir, valid_latest(), overview)
+
+    with pytest.raises(GoldDataMalformedError, match=f"market overview.*{column}"):
+        load_gold_data(gold_dir)
+
+
+def test_load_gold_data_raises_clear_error_when_latest_mover_value_is_bad(
+    tmp_path: Path,
+) -> None:
+    gold_dir = tmp_path / "gold"
+    latest = valid_latest()
+    latest["price_change_pct_24h"] = latest["price_change_pct_24h"].astype("object")
+    latest.loc[0, "price_change_pct_24h"] = "bad"
+    write_gold_data(gold_dir, latest, valid_overview())
+
+    with pytest.raises(GoldDataMalformedError, match="latest prices.*price_change_pct_24h"):
+        load_gold_data(gold_dir)
+
+
 def test_dashboard_renders_worst_performer_metric() -> None:
     source = inspect.getsource(render_dashboard)
 
