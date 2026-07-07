@@ -45,6 +45,6 @@ def fetch_coin_markets(
                 LOGGER.warning("coingecko_request_failed attempt=%s error=%s", attempt, exc)
                 if attempt == api_config.max_retries:
                     break
-                time.sleep(api_config.retry_backoff_seconds * attempt)
+                time.sleep(api_config.retry_backoff_seconds * (2 ** (attempt - 1)))
 
     raise RuntimeError("CoinGecko market data request failed") from last_error

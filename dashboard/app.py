@@ -5,6 +5,16 @@ import streamlit as st
 
 LATEST_PRICES_FILE = "gold_crypto_latest_prices.parquet"
 MARKET_OVERVIEW_FILE = "gold_market_overview.parquet"
+LATEST_PRICES_REQUIRED_COLUMNS = {"coin_id", "price_change_pct_24h"}
+MARKET_OVERVIEW_REQUIRED_COLUMNS = {
+    "snapshot_timestamp_utc",
+    "total_market_cap",
+    "total_volume_24h",
+    "average_return_24h_pct",
+    "best_performer_coin_id",
+    "worst_performer_coin_id",
+    "coin_count",
+}
 
 
 class GoldDataMissingError(FileNotFoundError):
@@ -15,19 +25,33 @@ class GoldDataMalformedError(RuntimeError):
     pass
 
 
+def validate_gold_frame(frame: pd.DataFrame, label: str, required_columns: set[str]) -> None:
+    if frame.empty:
+        raise GoldDataMalformedError(f"{label} gold data must not be empty")
+    missing_columns = sorted(required_columns - set(frame.columns))
+    if missing_columns:
+        raise GoldDataMalformedError(
+            f"{label} gold data is missing required columns: {', '.join(missing_columns)}"
+        )
+
+
 def load_gold_data(gold_dir: Path = Path("data/gold")) -> tuple[pd.DataFrame, pd.DataFrame]:
     latest_path = gold_dir / LATEST_PRICES_FILE
     overview_path = gold_dir / MARKET_OVERVIEW_FILE
     if not latest_path.exists() or not overview_path.exists():
         raise GoldDataMissingError(
-            "Gold data is missing. run the pipeline first with "
+            "Gold data is missing; run the pipeline first with "
             "`python -m crypto_etl.orchestration.run_pipeline`, or run "
             "`python -m crypto_etl.orchestration.run_pipeline --use-sample-data` when offline."
         )
     try:
-        return pd.read_parquet(latest_path), pd.read_parquet(overview_path)
+        latest = pd.read_parquet(latest_path)
+        overview = pd.read_parquet(overview_path)
     except Exception as exc:
         raise GoldDataMalformedError(f"Gold data could not be read: {exc}") from exc
+    validate_gold_frame(latest, "latest prices", LATEST_PRICES_REQUIRED_COLUMNS)
+    validate_gold_frame(overview, "market overview", MARKET_OVERVIEW_REQUIRED_COLUMNS)
+    return latest, overview
 
 
 def render_dashboard(gold_dir: Path = Path("data/gold")) -> None:
@@ -44,7 +68,7 @@ def render_dashboard(gold_dir: Path = Path("data/gold")) -> None:
         return
 
     overview_row = overview.iloc[0]
-    metric_columns = st.columns(5)
+    metric_columns = st.columns(6)
     metric_columns[0].metric(
         "Total Market Cap",
         f"{overview_row['total_market_cap']:,.0f}",
@@ -61,7 +85,11 @@ def render_dashboard(gold_dir: Path = Path("data/gold")) -> None:
         "Best Performer",
         str(overview_row["best_performer_coin_id"]),
     )
-    metric_columns[4].metric("Tracked Coins", int(overview_row["coin_count"]))
+    metric_columns[4].metric(
+        "Worst Performer",
+        str(overview_row["worst_performer_coin_id"]),
+    )
+    metric_columns[5].metric("Tracked Coins", int(overview_row["coin_count"]))
 
     st.subheader("Latest Prices")
     st.dataframe(latest, use_container_width=True)

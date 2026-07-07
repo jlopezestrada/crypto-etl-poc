@@ -1,4 +1,5 @@
 import httpx
+import pytest
 
 from crypto_etl.clients.coingecko_client import fetch_coin_markets
 from crypto_etl.config import ApiConfig
@@ -44,3 +45,32 @@ def test_fetch_coin_markets_retries_temporary_errors() -> None:
 
     assert response == [{"id": "bitcoin"}]
     assert calls == 2
+
+
+def test_fetch_coin_markets_uses_exponential_retry_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+    sleep_delays: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(429, json={"error": "rate limited"})
+
+    monkeypatch.setattr("crypto_etl.clients.coingecko_client.time.sleep", sleep_delays.append)
+
+    with pytest.raises(RuntimeError, match="CoinGecko market data request failed"):
+        fetch_coin_markets(
+            coins=["bitcoin"],
+            currency="eur",
+            api_config=ApiConfig(
+                timeout_seconds=1,
+                max_retries=4,
+                retry_backoff_seconds=0.5,
+            ),
+            transport=httpx.MockTransport(handler),
+        )
+
+    assert calls == 4
+    assert sleep_delays == [0.5, 1.0, 2.0]
