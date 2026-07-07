@@ -1,0 +1,19 @@
+coins:
+  - bitcoin
+  - ethereum
+  - solana
+  - binancecoin
+  - ripple
+  - cardano
+  - dogecoin
+currency: eur
+api:
+  base_url: https://api.coingecko.com/api/v3
+  timeout_seconds: 10
+  max_retries: 3
+  retry_backoff_seconds: 1
+paths:
+  raw_dir: data/raw
+  bronze_dir: data/bronze
+  silver_dir: data/silver
+  gold_dir: data/gold
