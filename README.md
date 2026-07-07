@@ -19,6 +19,45 @@ Crypto API
 
 The goal is to demonstrate a professional ETL workflow, including extraction, raw data preservation, transformation, data quality checks, logging, and visualization.
 
+## MVP Quickstart
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install the project with development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Run the test suite:
+
+```bash
+pytest
+```
+
+Run the pipeline with committed sample data when offline:
+
+```bash
+python -m crypto_etl.orchestration.run_pipeline --use-sample-data
+```
+
+Run the pipeline against CoinGecko:
+
+```bash
+python -m crypto_etl.orchestration.run_pipeline
+```
+
+Open the dashboard:
+
+```bash
+streamlit run dashboard/app.py
+```
+
 ## Development Approach
 
 This implementation will be developed using a mixed approach that combines AI-assisted support with manual programming. AI may be used to accelerate planning, boilerplate generation, refactoring suggestions, documentation, testing ideas, and debugging support. Manual programming will be used to review, validate, adapt, and implement the final code to ensure correctness, maintainability, and a clear understanding of the solution.
