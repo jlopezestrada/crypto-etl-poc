@@ -20,7 +20,20 @@ def write_gold_data(gold_dir: Path, latest: pd.DataFrame, overview: pd.DataFrame
 
 def valid_latest() -> pd.DataFrame:
     return pd.DataFrame(
-        [{"coin_id": "bitcoin", "latest_price": 58000.12, "price_change_pct_24h": 1.58}]
+        [
+            {
+                "coin_id": "bitcoin",
+                "symbol": "btc",
+                "name": "Bitcoin",
+                "currency": "usd",
+                "latest_price": 58000.12,
+                "market_cap": 1140000000000,
+                "market_cap_rank": 1,
+                "volume_24h": 32000000000,
+                "price_change_pct_24h": 1.58,
+                "last_updated_utc": "2026-07-06T10:29:00+00:00",
+            }
+        ]
     )
 
 
@@ -86,7 +99,7 @@ def test_load_gold_data_raises_clear_error_when_gold_data_is_empty(
     ("latest", "overview", "match"),
     [
         (
-            pd.DataFrame([{"coin_id": "bitcoin", "latest_price": 58000.12}]),
+            valid_latest().drop(columns=["price_change_pct_24h"]),
             valid_overview(),
             "latest prices gold data is missing required columns: price_change_pct_24h",
         ),
@@ -107,6 +120,16 @@ def test_load_gold_data_raises_clear_error_when_required_columns_are_missing(
         load_gold_data(gold_dir)
 
 
+def test_load_gold_data_raises_clear_error_when_latest_display_column_is_missing(
+    tmp_path: Path,
+) -> None:
+    gold_dir = tmp_path / "gold"
+    write_gold_data(gold_dir, valid_latest().drop(columns=["symbol"]), valid_overview())
+
+    with pytest.raises(GoldDataMalformedError, match="latest prices.*symbol"):
+        load_gold_data(gold_dir)
+
+
 @pytest.mark.parametrize("column", ["total_market_cap", "coin_count"])
 def test_load_gold_data_raises_clear_error_when_overview_numeric_values_are_bad(
     tmp_path: Path, column: str
@@ -118,6 +141,19 @@ def test_load_gold_data_raises_clear_error_when_overview_numeric_values_are_bad(
     write_gold_data(gold_dir, valid_latest(), overview)
 
     with pytest.raises(GoldDataMalformedError, match=f"market overview.*{column}"):
+        load_gold_data(gold_dir)
+
+
+def test_load_gold_data_raises_clear_error_when_latest_price_value_is_bad(
+    tmp_path: Path,
+) -> None:
+    gold_dir = tmp_path / "gold"
+    latest = valid_latest()
+    latest["latest_price"] = latest["latest_price"].astype("object")
+    latest.loc[0, "latest_price"] = "bad"
+    write_gold_data(gold_dir, latest, valid_overview())
+
+    with pytest.raises(GoldDataMalformedError, match="latest prices.*latest_price"):
         load_gold_data(gold_dir)
 
 

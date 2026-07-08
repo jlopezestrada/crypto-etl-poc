@@ -5,8 +5,25 @@ import streamlit as st
 
 LATEST_PRICES_FILE = "gold_crypto_latest_prices.parquet"
 MARKET_OVERVIEW_FILE = "gold_market_overview.parquet"
-LATEST_PRICES_REQUIRED_COLUMNS = {"coin_id", "price_change_pct_24h"}
-LATEST_PRICES_NUMERIC_COLUMNS = ("price_change_pct_24h",)
+LATEST_PRICES_REQUIRED_COLUMNS = {
+    "coin_id",
+    "symbol",
+    "name",
+    "currency",
+    "latest_price",
+    "market_cap",
+    "market_cap_rank",
+    "volume_24h",
+    "price_change_pct_24h",
+    "last_updated_utc",
+}
+LATEST_PRICES_NUMERIC_COLUMNS = (
+    "latest_price",
+    "market_cap",
+    "market_cap_rank",
+    "volume_24h",
+    "price_change_pct_24h",
+)
 MARKET_OVERVIEW_REQUIRED_COLUMNS = {
     "snapshot_timestamp_utc",
     "total_market_cap",
